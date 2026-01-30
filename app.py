@@ -136,79 +136,86 @@ def main():
     col_map, col_chart = st.columns([2, 1])
 
     with col_map:
-        st.subheader("📍 Penentuan Lokasi & Zonasi")
+        st.subheader("📍 Peta Sebaran & Zonasi")
         
-        # --- A. PILIHAN MODE LOKASI ---
+        # --- BARU: PILIHAN MODE LOKASI ---
         mode_lokasi = st.radio(
             "Metode Penentuan Lokasi Rumah:",
             ["Klik Manual di Peta", "GPS Perangkat (Otomatis)"],
-            horizontal=True
+            horizontal=True, key="mode_lok"
         )
 
         home_lat, home_lon = None, None
 
         if mode_lokasi == "GPS Perangkat (Otomatis)":
-            st.caption("Izinkan akses lokasi di browser untuk menggunakan fitur ini.")
             loc = streamlit_geolocation()
             if loc['latitude']:
                 home_lat, home_lon = loc['latitude'], loc['longitude']
-                st.success(f"Lokasi GPS Terdeteksi: `{home_lat:.5f}, {home_lon:.5f}`")
-        else:
-            st.info("Silakan **Klik pada peta** untuk menentukan lokasi rumah Anda.")
+                st.success(f"GPS Terdeteksi: `{home_lat:.5f}, {home_lon:.5f}`")
+        # --- SELESAI BAGIAN BARU ---
 
-        # --- B. SETTING CENTER & ZOOM ---
+        # Fitur Lamamu: Radio View Mode
+        view_mode = st.radio("Mode Tampilan:", ["Cluster Marker (Detail)", "Heatmap Kepadatan", "Analisis Radius (Zonasi)"], horizontal=True)
+        
         if not df_filtered.empty:
-            center_lat, center_lon = df_filtered['LINTANG'].mean(), df_filtered['BUJUR'].mean()
+            center_lat = df_filtered['LINTANG'].mean()
+            center_lon = df_filtered['BUJUR'].mean()
             zoom = 11 if filter_kota else 9
         else:
-            center_lat, center_lon, zoom = -6.9175, 107.6191, 9
+            center_lat, center_lon = -6.9175, 107.6191 
+            zoom = 9
 
-        # --- C. INISIALISASI PETA ---
+        # Inisialisasi Map
         m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom, tiles="CartoDB positron")
         Fullscreen().add_to(m)
 
-        # Logika View Mode (Cluster/Heatmap/Radius) tetap sama seperti kodemu...
-        # [Bagian view_mode kodemu ditaruh di sini]
+        # Logika Fitur Lamamu (Jangan Dihapus!)
+        if not df_filtered.empty:
+            if view_mode == "Cluster Marker (Detail)":
+                marker_cluster = MarkerCluster().add_to(m)
+                for _, row in df_filtered.iterrows():
+                    html = f'<div style="font-family:sans-serif; width:200px"><h4>{row["NAMA SEKOLAH"]}</h4>...</div>'
+                    folium.Marker(
+                        location=[row['LINTANG'], row['BUJUR']],
+                        icon=folium.Icon(color=get_color(row['AKREDITASI_CLEAN']), icon="graduation-cap", prefix="fa")
+                    ).add_to(marker_cluster)
 
-        # --- D. TAMBAHKAN MARKER RUMAH JIKA ADA ---
+            elif view_mode == "Heatmap Kepadatan":
+                heat_data = [[row['LINTANG'], row['BUJUR']] for _, row in df_filtered.iterrows()]
+                HeatMap(heat_data, radius=15, blur=10).add_to(m)
+
+            elif view_mode == "Analisis Radius (Zonasi)":
+                # ... (Logika Circle 2KM lamamu ditaruh di sini) ...
+                for _, row in df_filtered.head(500).iterrows(): # Limit agar tidak lag
+                    folium.Circle([row['LINTANG'], row['BUJUR']], radius=2000, color=get_color(row['AKREDITASI_CLEAN']), fill=True, opacity=0.1).add_to(m)
+
+        # --- BARU: TAMBAHKAN MARKER RUMAH USER KE PETA ---
         if home_lat and home_lon:
             folium.Marker(
                 [home_lat, home_lon], 
                 tooltip="Lokasi Rumah Anda", 
                 icon=folium.Icon(color='red', icon='home', prefix='fa')
             ).add_to(m)
-            folium.Circle([home_lat, home_lon], radius=2000, color='red', fill=True, opacity=0.1).add_to(m)
 
-        # --- E. RENDER PETA & TANGKAP KLIK ---
-        # Ganti baris st_folium(m) lamamu dengan ini:
-        output = st_folium(m, height=500, use_container_width=True, key="peta_jabar_utama")
+        # --- TAMPILKAN PETA & TANGKAP KLIK ---
+        # Kita pakai variabel 'output' agar bisa baca klik manual
+        output = st_folium(m, height=550, use_container_width=True, key="peta_utama")
 
+        # Jika mode klik manual dan peta diklik, update koordinat
         if mode_lokasi == "Klik Manual di Peta" and output.get('last_clicked'):
-            home_lat, home_lon = output['last_clicked']['lat'], output['last_clicked']['lng']
-            
-       
-        
+            home_lat = output['last_clicked']['lat']
+            home_lon = output['last_clicked']['lng']
 
-        # --- F. TAMPILKAN HASIL REKOMENDASI ---
+        # --- BARU: TAMPILKAN KARTU REKOMENDASI ---
         if home_lat and home_lon:
             st.markdown("---")
             rekomendasi = get_recommendations(home_lat, home_lon, df_filtered)
-            
             if rekomendasi is not None:
-                st.subheader("🏆 Top 3 Rekomendasi Sekolah (Radius 2KM)")
-                cols_rec = st.columns(3)
+                st.subheader("🏆 Rekomendasi Sekolah Terdekat")
+                cols = st.columns(3)
                 for i, (_, row) in enumerate(rekomendasi.iterrows()):
-                    with cols_rec[i]:
-                        color = get_color(row['AKREDITASI_CLEAN'])
-                        st.markdown(f"""
-                        <div style="background-color:white; padding:15px; border-radius:10px; border-left:5px solid {color}; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); height:160px;">
-                            <h4 style="margin:0; font-size:14px;">{row['NAMA SEKOLAH']}</h4>
-                            <p style="margin:5px 0; font-size:12px; color:gray;">📏 Jarak: <b>{row['JARAK_KM']:.2f} km</b></p>
-                            <p style="margin:0; font-size:12px;">⭐ Skor Keunggulan: <b>{row['SCORE_FINAL']:.1f}/100</b></p>
-                        </div>
-                        """, unsafe_allow_html=True)
-            else:
-                st.warning("Tidak ditemukan sekolah dalam radius zonasi 2KM dari lokasi Anda.")
+                    with cols[i]:
+                        st.info(f"**{row['NAMA SEKOLAH']}**\n\n📏 {row['JARAK_KM']:.2f} km")
 
     with col_chart:
         st.subheader("📈 Analisis Data")
