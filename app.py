@@ -4,6 +4,7 @@ import folium
 from streamlit_folium import st_folium
 from folium.plugins import MarkerCluster, HeatMap, Fullscreen
 import altair as alt
+from geopy.distance import geodesic
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
@@ -45,6 +46,29 @@ def get_color(akreditasi):
     elif akreditasi == 'B': return 'blue'
     elif akreditasi == 'C': return 'orange'
     else: return 'red' # Tidak terakreditasi/TT
+
+# --- FUNGSI REKOMENDASI SEKOAH BERDASARKAN TITIK KLIK ---
+def get_recommendations(user_lat, user_lon, df, radius_km=2.0):
+    # Hitung jarak untuk setiap sekolah dari titik klik
+    df_rec = df.copy()
+    df_rec['JARAK_KM'] = df_rec.apply(
+        lambda row: geodesic((user_lat, user_lon), (row['LINTANG'], row['BUJUR'])).km, axis=1
+    )
+    
+    # Filter hanya yang masuk zonasi 2KM
+    df_zonasi = df_rec[df_rec['JARAK_KM'] <= radius_km].copy()
+    
+    if df_zonasi.empty:
+        return None
+    
+    # HITUNG FINAL SCORE (Inovasi: Jarak 60% + Kualitas 40%)
+    # Jarak dinormalisasi: 1 - (jarak/radius) -> semakin dekat skor makin tinggi
+    df_zonasi['SCORE_FINAL'] = (
+        ((1 - (df_zonasi['JARAK_KM'] / radius_km)) * 60) + 
+        ((df_zonasi['QUALITY_SCORE'] / 100) * 40)
+    )
+    
+    return df_zonasi.sort_values(by='SCORE_FINAL', ascending=False).head(3)
 
 # --- MAIN APPLICATION ---
 def main():
@@ -158,7 +182,38 @@ def main():
 
             elif view_mode == "Analisis Radius (Zonasi)":
                 st.info(f"Menampilkan radius zonasi 2KM untuk sekolah yang terpilih ({len(df_filtered)} sekolah).")
+    # Tampilkan Peta dan Tangkap Klik User
+       
+        output = st_folium(m, height=550, use_container_width=True, key="peta_jabar_interaktif")
+
+        #Logika Rekomendasi
+        if output and output.get('last_clicked'):
+            clicked_lat = output['last_clicked']['lat']
+            clicked_lon = output['last_clicked']['lng']
+            
+            st.markdown("---")
+            st.info(f"📍 **Lokasi Terdeteksi:** {clicked_lat:.5f}, {clicked_lon:.5f}")
+            
+            # Panggil fungsi rekomendasi yang sudah kamu buat di atas
+            rekomendasi = get_recommendations(clicked_lat, clicked_lon, df_filtered)
+            
+            if rekomendasi is not None:
+                st.subheader("🏆 Rekomendasi Sekolah Terdekat (Zonasi 2KM)")
+                cols_rec = st.columns(3)
                 
+                for i, (_, row) in enumerate(rekomendasi.iterrows()):
+                    color = get_color(row['AKREDITASI_CLEAN'])
+                    with cols_rec[i]:
+                        st.markdown(f"""
+                        <div style="background-color:#ffffff; padding:15px; border-radius:10px; border-left: 5px solid {color}; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); height: 160px;">
+                            <h4 style="margin:0; font-size:15px; color:#333;">{row['NAMA SEKOLAH']}</h4>
+                            <p style="margin:5px 0; font-size:12px; color:gray;">📏 Jarak: <b>{row['JARAK_KM']:.2f} km</b></p>
+                            <p style="margin:0; font-size:12px; color:#444;">⭐ Skor Kelayakan: <b>{row['SCORE_FINAL']:.1f}/100</b></p>
+                        </div>
+                        """, unsafe_allow_html=True)
+            else:
+                st.warning("⚠️ Tidak ditemukan sekolah dalam radius 2KM dari lokasi rumah Anda.")
+
                 limit = 500
                 df_render = df_filtered
                 if len(df_filtered) > limit:
@@ -179,7 +234,7 @@ def main():
                         radius=2, color=get_color(row['AKREDITASI_CLEAN']), fill=True
                     ).add_to(m)
 
-        st_folium(m, height=550, use_container_width=True)
+
 
     with col_chart:
         st.subheader("📈 Analisis Data")
