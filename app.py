@@ -182,9 +182,9 @@ def main():
 
             elif view_mode == "Analisis Radius (Zonasi)":
                 st.info(f"Menampilkan radius zonasi 2KM untuk sekolah yang terpilih ({len(df_filtered)} sekolah).")
-    # Tampilkan Peta dan Tangkap Klik User
-       
-        st_folium(m, height=550, use_container_width=True, key="peta_jabar_interaktif")
+    
+       # Tampilkan Peta dan Tangkap Klik User
+        output = st_folium(m, height=550, use_container_width=True, key="peta_jabar_interaktif")
 
         #Logika Rekomendasi
         if output and output.get('last_clicked'):
