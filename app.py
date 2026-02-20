@@ -6,6 +6,7 @@ from folium.plugins import MarkerCluster, HeatMap, Fullscreen
 import altair as alt
 from math import radians, cos, sin, asin, sqrt
 import time
+from streamlit_js_eval import streamlit_js_eval
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
