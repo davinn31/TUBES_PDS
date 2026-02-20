@@ -48,6 +48,8 @@ st.markdown("""
         border: 1px solid #e0e0e0;
     }
     </style>
+
+    
 """, unsafe_allow_html=True)
 
 
@@ -215,6 +217,29 @@ def main():
                 icon=folium.Icon(color=get_color(row['AKREDITASI_CLEAN']), icon="graduation-cap", prefix="fa")
             ).add_to(marker_cluster)
 
+        # --- 1. DEFISINISIKAN HTML LEGENDA ---
+        legend_html = '''
+             <div style="
+             position: fixed; 
+             bottom: 50px; left: 50px; width: 160px; height: 140px; 
+             border:2px solid #dee2e6; z-index:9999; font-size:14px;
+             background-color: white;
+             border-radius: 10px;
+             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+             padding: 10px;
+             font-family: 'sans-serif';
+             ">
+             <b style="color: #000000;">Keterangan Akreditasi</b><br>
+             <i class="fa fa-graduation-cap" style="color:green"></i>&nbsp; Akreditasi A <br>
+             <i class="fa fa-graduation-cap" style="color:blue"></i>&nbsp; Akreditasi B <br>
+             <i class="fa fa-graduation-cap" style="color:orange"></i>&nbsp; Akreditasi C <br>
+             <i class="fa fa-graduation-cap" style="color:red"></i>&nbsp; Lainnya / TT <br>
+             <hr style="margin: 5px 0;">
+             <i class="fa fa-home" style="color:black"></i>&nbsp; Lokasi Rumah
+             </div>
+             '''
+        # --- 2. SISIPKAN KE PETA ---
+        m.get_root().html.add_child(folium.Element(legend_html))
         map_output = st_folium(m, height=550, use_container_width=True)
 
         if aktifkan_zonasi:
