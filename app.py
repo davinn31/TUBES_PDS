@@ -122,4 +122,46 @@ def main():
         )
         df_filtered = df_filtered[df_filtered['JARAK_KM'] <= radius_km].copy()
         df_filtered = df_filtered.sort_values('JARAK_KM')
-        jarak_msg = f
+        jarak_msg = f"📍 Radius **{radius_km} KM** dari rumah."
+
+    # --- KPI & PETA (LAYOUT) ---
+    st.markdown("### 📊 Ringkasan Statistik")
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1.5])
+    
+    total = len(df_filtered)
+    col1.metric("Total Sekolah", f"{total:,}")
+    # ... (Sisa metrik lo bisa tambahin di sini biar rapi)
+
+    st.divider()
+    col_map, col_chart = st.columns([2, 1])
+
+    with col_map:
+        center = st.session_state['lokasi_rumah'] if st.session_state['lokasi_rumah'] else [-6.9175, 107.6191]
+        m = folium.Map(location=center, zoom_start=11, tiles="CartoDB positron")
+        
+        if st.session_state['lokasi_rumah']:
+            folium.Marker(st.session_state['lokasi_rumah'], icon=folium.Icon(color="black", icon="home")).add_to(m)
+            folium.Circle(st.session_state['lokasi_rumah'], radius=radius_km*1000, color="blue", fill=True).add_to(m)
+
+        marker_cluster = MarkerCluster().add_to(m)
+        for _, row in df_filtered.iterrows():
+            folium.Marker([row['LINTANG'], row['BUJUR']], tooltip=row['NAMA SEKOLAH']).add_to(marker_cluster)
+
+        map_output = st_folium(m, height=500, use_container_width=True)
+
+        if aktifkan_zonasi and map_output['last_clicked']:
+            new_loc = [map_output['last_clicked']['lat'], map_output['last_clicked']['lng']]
+            if st.session_state['lokasi_rumah'] != new_loc:
+                st.session_state['lokasi_rumah'] = new_loc
+                st.rerun()
+
+    with col_chart:
+        st.subheader("📈 Proporsi Akreditasi")
+        if not df_filtered.empty:
+            chart = alt.Chart(df_filtered).mark_arc().encode(
+                theta="count()", color="AKREDITASI_CLEAN"
+            )
+            st.altair_chart(chart, use_container_width=True)
+
+if __name__ == "__main__":
+    main()
