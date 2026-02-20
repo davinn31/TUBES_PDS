@@ -35,7 +35,7 @@ st.markdown("""
     [data-testid="stMetricValue"] {
         font-size: 20px; /* <-- Ukuran pas agar "Negeri | Swasta" tidak kepotong */
         font-weight: bold;
-        color: #212529 !important;
+        color: #000000 !important;
     }
     
     [data-testid="stMetricDelta"] {
