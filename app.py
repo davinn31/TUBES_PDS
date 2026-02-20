@@ -85,7 +85,7 @@ def get_color(akreditasi):
 
 # --- MAIN APPLICATION ---
 def main():
-    st.title("🗺️ Dashboard Zonasi PPDB Jawa Barat")
+    st.title("West java Education Insight - Interactive GIS Dashboard")
     st.markdown("**Simulasi Jarak & Kualitas Sekolah** | Data Source: Dapodik/Verval SP")
     
     # --- UI LOADING ---
@@ -198,7 +198,7 @@ def main():
     col_map, col_chart = st.columns([2, 1])
 
     with col_map:
-        st.subheader("📍 Peta Interaktif")
+        st.subheader("Interactive Map")
         
         if aktifkan_zonasi and st.session_state['lokasi_rumah']:
              center_lat, center_lon = st.session_state['lokasi_rumah']
