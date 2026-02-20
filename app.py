@@ -17,6 +17,7 @@ st.set_page_config(
 # --- CSS CUSTOM ---
 st.markdown("""
     <style>
+    /* Metric Cards */
     [data-testid="stMetric"] {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -25,13 +26,30 @@ st.markdown("""
         box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
         color: #000000;
     }
+    [data-testid="stMetricLabel"] {
+        font-size: 14px;
+        color: #495057 !important; 
+    }
+    
+    /* PERBAIKAN DI SINI: Font Value Diperkecil jadi 20px */
     [data-testid="stMetricValue"] {
-        font-size: 20px;
+        font-size: 20px; /* <-- Ukuran pas agar "Negeri | Swasta" tidak kepotong */
         font-weight: bold;
         color: #212529 !important;
     }
+    
+    [data-testid="stMetricDelta"] {
+        color: #495057 !important;
+    }
+    
+    /* Loading Status Container Styling */
+    .stStatusWidget {
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }
     </style>
 """, unsafe_allow_html=True)
+
 
 # --- FUNGSI JARAK (HAVERSINE) ---
 def haversine(lon1, lat1, lon2, lat2):
