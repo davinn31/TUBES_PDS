@@ -259,5 +259,27 @@ def main():
         else:
             st.info("Belum ada sekolah dalam radius ini. Coba geser peta atau perbesar radius.")
 
+     # --- TABEL DATA ---
+    with st.expander("📂 Lihat Data Detail"):
+        kolom_buang = ['Unnamed: 0', 'BENTUK PENDIDIKAN', 'WAKTU PENYELENGGARAAN', 
+                       'AKREDITASI_CLEAN', 'BENTUK', 'NAMA DUSUN']
+        
+        df_tampil = df_filtered.drop(columns=kolom_buang, errors='ignore').copy()
+        
+        cols = list(df_tampil.columns)
+        if 'JENJANG' in cols and 'NPSN' in cols:
+            cols.remove('JENJANG')
+            idx_npsn = cols.index('NPSN')
+            cols.insert(idx_npsn + 1, 'JENJANG')
+            df_tampil = df_tampil[cols]
+
+        if 'KODE POS' in df_tampil.columns:
+            df_tampil['KODE POS'] = df_tampil['KODE POS'].astype(str).str.replace(r'\.0$', '', regex=True).replace({'nan': '-', 'NaN': '-'})
+
+        df_tampil = df_tampil.reset_index(drop=True)
+        df_tampil.index = df_tampil.index + 1
+        
+        st.dataframe(df_tampil, use_container_width=True)
+
 if __name__ == "__main__":
     main()
