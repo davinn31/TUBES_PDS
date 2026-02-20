@@ -112,14 +112,29 @@ def main():
         st.subheader("🏠 Mode Zonasi")
         aktifkan_zonasi = st.checkbox("Aktifkan Pilih Lokasi Rumah", value=False)
         radius_km = st.slider("Radius Zonasi (KM):", 1, 15, 3)
+    st.sidebar.subheader("📡 Auto-Lokasi (GPS)")
+    if st.sidebar.button("Gunakan Lokasi Saya Saat Ini", use_container_width=True):
+        # Ambil koordinat via JavaScript
+        loc = streamlit_js_eval(js_expressions="new Promise(resolve => navigator.geolocation.getCurrentPosition(pos => resolve(pos.coords)))", key="get_location")
         
+        if loc:
+            user_lat = loc['latitude']
+            user_lon = loc['longitude']
+            
+            # Simpan ke session state agar peta ter-update
+            st.session_state['lokasi_rumah'] = [user_lat, user_lon]
+            st.sidebar.success(f"📍 Lokasi ditemukan: {user_lat:.4f}, {user_lon:.4f}")
+            st.rerun()
+        else:
+            st.sidebar.warning("⚠️ Pastikan izin lokasi (GPS) di browser aktif.")
         st.divider()
         st.subheader("Filter Data")
         filter_jenjang = st.multiselect("Jenjang:", df['JENJANG'].unique(), default=df['JENJANG'].unique())
         filter_akreditasi = st.multiselect("Akreditasi:", sorted(df['AKREDITASI_CLEAN'].unique()), default=df['AKREDITASI_CLEAN'].unique())
         filter_kota = st.multiselect("Kab/Kota:", sorted(df['KABUPATEN'].unique().astype(str)), default=[])
 
-        submitted = st.form_submit_button("🚀 Terapkan Filter & Update Lokasi", use_container_width=True)
+        submitted = st.form_submit_button("Terapkan Filter", use_container_width=True)
+    
     # --- INFO TAMBAHAN ---
     st.sidebar.markdown("---")
     st.sidebar.caption("Developed by Davin")
