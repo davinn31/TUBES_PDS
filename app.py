@@ -113,9 +113,11 @@ def main():
 
     # --- SIDEBAR ---
     st.sidebar.header("🎛️ Panel Kontrol")
-    
+
+    with st.sidebar.form("filter_form"):
     st.sidebar.subheader("🏠 Mode Zonasi")
     aktifkan_zonasi = st.sidebar.checkbox("Aktifkan Pilih Lokasi Rumah", value=False)
+
     
     radius_km = 0 
     if aktifkan_zonasi:
@@ -133,6 +135,9 @@ def main():
     filter_akreditasi = st.sidebar.multiselect("Akreditasi:", opsi_akreditasi, default=opsi_akreditasi)
     filter_kota = st.sidebar.multiselect("Kab/Kota:", sorted(df['KABUPATEN'].unique().astype(str)), default=[])
 
+    # TOMBOL Terapkan Filter
+    submitted = st.form_submit_button("Terapkan Filter")
+    
     # --- INFO TAMBAHAN DI SIDEBAR ---
     st.sidebar.markdown("---")
     with st.sidebar.expander("ℹ️ Tentang Aplikasi"):
