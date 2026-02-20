@@ -123,9 +123,9 @@ def main():
         if aktifkan_zonasi:
             st.sidebar.info("👉 Klik di Peta untuk menentukan lokasi rumah Anda.")
             radius_km = st.sidebar.slider("Radius Zonasi (KM):", 1, 15, 3)
-                if st.sidebar.button("Reset Lokasi Rumah"):
-                    st.session_state['lokasi_rumah'] = None
-                    st.rerun()
+            if st.sidebar.button("Reset Lokasi Rumah"):
+                st.session_state['lokasi_rumah'] = None
+                st.rerun()
 
     st.sidebar.divider()
     
