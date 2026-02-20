@@ -119,13 +119,13 @@ def main():
         aktifkan_zonasi = st.sidebar.checkbox("Aktifkan Pilih Lokasi Rumah", value=False)
 
     
-    radius_km = 0 
-    if aktifkan_zonasi:
-        st.sidebar.info("👉 Klik di Peta untuk menentukan lokasi rumah Anda.")
-        radius_km = st.sidebar.slider("Radius Zonasi (KM):", 1, 15, 3)
-        if st.sidebar.button("Reset Lokasi Rumah"):
-            st.session_state['lokasi_rumah'] = None
-            st.rerun()
+        radius_km = 0 
+        if aktifkan_zonasi:
+            st.sidebar.info("👉 Klik di Peta untuk menentukan lokasi rumah Anda.")
+            radius_km = st.sidebar.slider("Radius Zonasi (KM):", 1, 15, 3)
+                if st.sidebar.button("Reset Lokasi Rumah"):
+                    st.session_state['lokasi_rumah'] = None
+                    st.rerun()
 
     st.sidebar.divider()
     
@@ -136,7 +136,7 @@ def main():
     filter_kota = st.sidebar.multiselect("Kab/Kota:", sorted(df['KABUPATEN'].unique().astype(str)), default=[])
 
     # TOMBOL Terapkan Filter
-    submitted = st.form_submit_button("Terapkan Filter")
+            submitted = st.form_submit_button("Terapkan Filter")
     
     # --- INFO TAMBAHAN DI SIDEBAR ---
     st.sidebar.markdown("---")
