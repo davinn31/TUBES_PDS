@@ -259,13 +259,5 @@ def main():
         else:
             st.info("Belum ada sekolah dalam radius ini. Coba geser peta atau perbesar radius.")
 
-    with col_chart:
-        st.subheader("📈 Proporsi Akreditasi")
-        if not df_filtered.empty:
-            chart = alt.Chart(df_filtered).mark_arc().encode(
-                theta="count()", color="AKREDITASI_CLEAN"
-            )
-            st.altair_chart(chart, use_container_width=True)
-
 if __name__ == "__main__":
     main()
