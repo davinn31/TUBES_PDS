@@ -115,8 +115,8 @@ def main():
     st.sidebar.header("🎛️ Panel Kontrol")
 
     with st.sidebar.form("filter_form"):
-    st.subheader("🏠 Mode Zonasi")
-    aktifkan_zonasi = st.sidebar.checkbox("Aktifkan Pilih Lokasi Rumah", value=False)
+        st.subheader("🏠 Mode Zonasi")
+        aktifkan_zonasi = st.sidebar.checkbox("Aktifkan Pilih Lokasi Rumah", value=False)
 
     
     radius_km = 0 
