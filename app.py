@@ -100,11 +100,7 @@ def main():
 
     # --- SIDEBAR (THE FIX) ---
     st.sidebar.header("🎛️ Panel Kontrol")
-
-    # Tombol Reset ditaruh di luar FORM karena aturan Streamlit
-    if st.sidebar.button("Reset Lokasi Rumah"):
-        st.session_state['lokasi_rumah'] = None
-        st.rerun()
+    
 
     with st.sidebar.form("filter_form"):
         st.subheader("🏠 Mode Zonasi")
@@ -112,6 +108,9 @@ def main():
         radius_km = st.slider("Radius Zonasi (KM):", 1, 15, 3)
         
         st.divider()
+    if st.sidebar.button("Reset Lokasi Rumah"):
+        st.session_state['lokasi_rumah'] = None
+        st.rerun()
         
         st.subheader("Filter Data")
         filter_jenjang = st.multiselect("Jenjang:", df['JENJANG'].unique(), default=df['JENJANG'].unique())
