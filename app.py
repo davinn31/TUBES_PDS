@@ -151,25 +151,95 @@ def main():
     st.divider()
     col_map, col_chart = st.columns([2, 1])
 
+        # --- PETA & CHART ---
     with col_map:
-        center = st.session_state['lokasi_rumah'] if st.session_state['lokasi_rumah'] else [-6.9175, 107.6191]
-        m = folium.Map(location=center, zoom_start=11, tiles="CartoDB positron")
+        st.subheader("Interactive Map")
         
-        if st.session_state['lokasi_rumah']:
-            folium.Marker(st.session_state['lokasi_rumah'], icon=folium.Icon(color="black", icon="home")).add_to(m)
-            folium.Circle(st.session_state['lokasi_rumah'], radius=radius_km*1000, color="blue", fill=True).add_to(m)
+        if aktifkan_zonasi and st.session_state['lokasi_rumah']:
+             center_lat, center_lon = st.session_state['lokasi_rumah']
+             zoom = 13 
+        elif not df_filtered.empty:
+            center_lat, center_lon = df_filtered['LINTANG'].mean(), df_filtered['BUJUR'].mean()
+            zoom = 10 if filter_kota else 9
+        else:
+            center_lat, center_lon = -6.9175, 107.6191
+            zoom = 9
+
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom, tiles="CartoDB positron")
+        Fullscreen().add_to(m)
+
+        if aktifkan_zonasi and st.session_state['lokasi_rumah']:
+            folium.Marker(
+                location=st.session_state['lokasi_rumah'],
+                tooltip="Lokasi Rumah Anda",
+                icon=folium.Icon(color="black", icon="home", prefix="fa")
+            ).add_to(m)
+            
+            folium.Circle(
+                location=st.session_state['lokasi_rumah'],
+                radius=radius_km * 1000, 
+                color="blue", fill=True, fill_opacity=0.1
+            ).add_to(m)
 
         marker_cluster = MarkerCluster().add_to(m)
         for _, row in df_filtered.iterrows():
-            folium.Marker([row['LINTANG'], row['BUJUR']], tooltip=row['NAMA SEKOLAH']).add_to(marker_cluster)
+            info_jarak = f"<br><b>Jarak:</b> {row['JARAK_KM']:.2f} KM" if 'JARAK_KM' in row else ""
+            
+            html = f"""
+            <div style="font-family:sans-serif; width:200px">
+                <h4 style="margin-bottom:0;">{row['NAMA SEKOLAH']}</h4>
+                <span style="font-size:12px; color:gray;">{row['JENJANG']} | {row.get('STATUS','-')}</span>
+                <hr style="margin:5px 0;">
+                <b>Akreditasi:</b> {row['AKREDITASI_CLEAN']}<br>
+                <b>Skor:</b> {row['SKOR_KUALITAS']}{info_jarak}
+            </div>
+            """
+            folium.Marker(
+                [row['LINTANG'], row['BUJUR']],
+                popup=folium.Popup(html, max_width=250),
+                tooltip=f"{row['NAMA SEKOLAH']}",
+                icon=folium.Icon(color=get_color(row['AKREDITASI_CLEAN']), icon="graduation-cap", prefix="fa")
+            ).add_to(marker_cluster)
 
-        map_output = st_folium(m, height=500, use_container_width=True)
+        map_output = st_folium(m, height=550, use_container_width=True)
 
-        if aktifkan_zonasi and map_output['last_clicked']:
-            new_loc = [map_output['last_clicked']['lat'], map_output['last_clicked']['lng']]
-            if st.session_state['lokasi_rumah'] != new_loc:
-                st.session_state['lokasi_rumah'] = new_loc
-                st.rerun()
+        if aktifkan_zonasi:
+            if map_output['last_clicked']:
+                clicked_lat = map_output['last_clicked']['lat']
+                clicked_lng = map_output['last_clicked']['lng']
+                
+                if st.session_state['lokasi_rumah'] != [clicked_lat, clicked_lng]:
+                    st.session_state['lokasi_rumah'] = [clicked_lat, clicked_lng]
+                    st.rerun() 
+
+    with col_chart:
+        st.subheader("📈 Analisis Data")
+        if not df_filtered.empty:
+            chart_akreditasi = alt.Chart(df_filtered).mark_arc(innerRadius=50).encode(
+                theta=alt.Theta("count()", stack=True),
+                color=alt.Color('AKREDITASI_CLEAN', legend=alt.Legend(title="Akreditasi"),
+                                scale=alt.Scale(domain=['A', 'B', 'C', 'TT'], range=['green', 'blue', 'orange', 'red'])),
+                tooltip=[
+                    alt.Tooltip('AKREDITASI_CLEAN', title='Akreditasi'),
+                    alt.Tooltip('count()', title='Jumlah Sekolah') 
+                ],
+                order=alt.Order("AKREDITASI_CLEAN", sort="ascending")
+            ).properties(title="Proporsi Sekolah (Area Terpilih)")
+            
+            st.altair_chart(chart_akreditasi, use_container_width=True)
+
+            if 'KECAMATAN' in df_filtered.columns:
+                top_kec = df_filtered['KECAMATAN'].value_counts().head(10).reset_index()
+                top_kec.columns = ['Kecamatan', 'Jumlah']
+                
+                chart_kec = alt.Chart(top_kec).mark_bar().encode(
+                    x=alt.X('Jumlah', title='Jumlah Sekolah'), 
+                    y=alt.Y('Kecamatan', sort='-x', title=''),
+                    tooltip=['Kecamatan', alt.Tooltip('Jumlah', title='Jumlah Sekolah')]
+                ).properties(title="Top 10 Kecamatan")
+                st.altair_chart(chart_kec, use_container_width=True)
+        else:
+            st.info("Belum ada sekolah dalam radius ini. Coba geser peta atau perbesar radius.")
 
     with col_chart:
         st.subheader("📈 Proporsi Akreditasi")
