@@ -115,7 +115,7 @@ def main():
     st.sidebar.header("🎛️ Panel Kontrol")
 
     with st.sidebar.form("filter_form"):
-    st.sidebar.subheader("🏠 Mode Zonasi")
+    st.subheader("🏠 Mode Zonasi")
     aktifkan_zonasi = st.sidebar.checkbox("Aktifkan Pilih Lokasi Rumah", value=False)
 
     
