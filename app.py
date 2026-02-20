@@ -101,26 +101,23 @@ def main():
     # --- SIDEBAR (THE FIX) ---
     st.sidebar.header("🎛️ Panel Kontrol")
     
-    if st.sidebar.button("Reset Lokasi Rumah"):
-        st.session_state['lokasi_rumah'] = None
-        st.rerun()
-        
+    with st.sidebar.container():
+        if st.sidebar.button("🗑️ Reset Lokasi Rumah", use_container_width=True):
+            st.session_state['lokasi_rumah'] = None
+            st.rerun()
+
     with st.sidebar.form("filter_form"):
         st.subheader("🏠 Mode Zonasi")
         aktifkan_zonasi = st.checkbox("Aktifkan Pilih Lokasi Rumah", value=False)
         radius_km = st.slider("Radius Zonasi (KM):", 1, 15, 3)
         
         st.divider()
-    
-        
         st.subheader("Filter Data")
         filter_jenjang = st.multiselect("Jenjang:", df['JENJANG'].unique(), default=df['JENJANG'].unique())
         filter_akreditasi = st.multiselect("Akreditasi:", sorted(df['AKREDITASI_CLEAN'].unique()), default=df['AKREDITASI_CLEAN'].unique())
         filter_kota = st.multiselect("Kab/Kota:", sorted(df['KABUPATEN'].unique().astype(str)), default=[])
 
-        # TOMBOL SUBMIT (Wajib menjorok di dalam form)
-        submitted = st.form_submit_button("Terapkan Filter")
-
+        submitted = st.form_submit_button("🚀 Terapkan Filter & Update Lokasi", use_container_width=True)
     # --- INFO TAMBAHAN ---
     st.sidebar.markdown("---")
     st.sidebar.caption("Developed by Davin")
@@ -142,7 +139,6 @@ def main():
         df_filtered = df_filtered.sort_values('JARAK_KM')
         jarak_msg = f"📍 Radius **{radius_km} KM** dari rumah."
 
-    # --- KPI & PETA (LAYOUT) ---
      # --- KPI METRICS ---
     st.markdown("### 📊 Ringkasan Statistik")
     if jarak_msg:
