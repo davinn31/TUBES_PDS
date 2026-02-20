@@ -125,12 +125,28 @@ def main():
         jarak_msg = f"📍 Radius **{radius_km} KM** dari rumah."
 
     # --- KPI & PETA (LAYOUT) ---
+     # --- KPI METRICS ---
     st.markdown("### 📊 Ringkasan Statistik")
+    if jarak_msg:
+        st.toast(jarak_msg, icon='📍') 
+        st.success(jarak_msg) 
+        
+    # PERBAIKAN DI SINI: Kolom ke-4 dibuat lebih lebar (1.5x) agar muat
     col1, col2, col3, col4 = st.columns([1, 1, 1, 1.5])
     
     total = len(df_filtered)
+    jml_a = len(df_filtered[df_filtered['AKREDITASI_CLEAN'] == 'A'])
+    persen_a = (jml_a / total * 100) if total > 0 else 0
+    avg_q = df_filtered['SKOR_KUALITAS'].mean() if total > 0 else 0 
+    
     col1.metric("Total Sekolah", f"{total:,}")
-    # ... (Sisa metrik lo bisa tambahin di sini biar rapi)
+    col2.metric("Akreditasi A", f"{jml_a} ({persen_a:.1f}%)")
+    col3.metric("Rata-rata Skor", f"{avg_q:.1f}")
+    
+    if 'STATUS' in df_filtered.columns:
+        negeri = len(df_filtered[df_filtered['STATUS'] == 'NEGERI'])
+        swasta = total - negeri
+        col4.metric("Status", f"{negeri} Negeri | {swasta} Swasta")
 
     st.divider()
     col_map, col_chart = st.columns([2, 1])
