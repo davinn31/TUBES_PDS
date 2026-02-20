@@ -101,16 +101,17 @@ def main():
     # --- SIDEBAR (THE FIX) ---
     st.sidebar.header("🎛️ Panel Kontrol")
     
-
+    if st.sidebar.button("Reset Lokasi Rumah"):
+        st.session_state['lokasi_rumah'] = None
+        st.rerun()
+        
     with st.sidebar.form("filter_form"):
         st.subheader("🏠 Mode Zonasi")
         aktifkan_zonasi = st.checkbox("Aktifkan Pilih Lokasi Rumah", value=False)
         radius_km = st.slider("Radius Zonasi (KM):", 1, 15, 3)
         
         st.divider()
-    if st.sidebar.button("Reset Lokasi Rumah"):
-        st.session_state['lokasi_rumah'] = None
-        st.rerun()
+    
         
         st.subheader("Filter Data")
         filter_jenjang = st.multiselect("Jenjang:", df['JENJANG'].unique(), default=df['JENJANG'].unique())
