@@ -123,7 +123,7 @@ def main():
 
     # --- INFO TAMBAHAN ---
     st.sidebar.markdown("---")
-    st.sidebar.caption("Developed by Kelompok 5 PDS IF 6")
+    st.sidebar.caption("Developed by Davin")
 
     # --- LOGIKA FILTERING ---
     df_filtered = df[df['JENJANG'].isin(filter_jenjang)]
