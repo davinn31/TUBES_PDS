@@ -136,7 +136,7 @@ def main():
     filter_kota = st.sidebar.multiselect("Kab/Kota:", sorted(df['KABUPATEN'].unique().astype(str)), default=[])
 
     # TOMBOL Terapkan Filter
-            submitted = st.form_submit_button("Terapkan Filter")
+    submitted = st.form_submit_button("Terapkan Filter")
     
     # --- INFO TAMBAHAN DI SIDEBAR ---
     st.sidebar.markdown("---")
