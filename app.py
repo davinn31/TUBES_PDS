@@ -101,37 +101,88 @@ def main():
     if 'lokasi_rumah' not in st.session_state:
         st.session_state['lokasi_rumah'] = None
 
-    # --- SIDEBAR (THE FIX) ---
+    # ==================== SIDEBAR (REORGANIZED) ====================
     st.sidebar.header("🎛️ Panel Kontrol")
     
-    st.sidebar.subheader("📡 Auto-Lokasi (GPS)")
-    if st.sidebar.button("📍 Gunakan Lokasi Saya", use_container_width=True):
-        loc = streamlit_js_eval(js_expressions="new Promise(resolve => navigator.geolocation.getCurrentPosition(pos => resolve(pos.coords)))", key="get_location")
-        if loc:
-            st.session_state['lokasi_rumah'] = [loc['latitude'], loc['longitude']]
+    # ==================== SECTION 1: LOKASI & ZONASI ====================
+    st.sidebar.subheader("📍 Lokasi & Zonasi")
+    
+    # Display current location status
+    if st.session_state.get('lokasi_rumah'):
+        lat_curr, lon_curr = st.session_state['lokasi_rumah']
+        st.sidebar.success(f"✅ Lokasi aktif: {lat_curr:.5f}, {lon_curr:.5f}")
+    else:
+        st.sidebar.info("ℹ️ Belum ada lokasi yang dipilih")
+    
+    # GPS Button with loading
+    gps_placeholder = st.sidebar.empty()
+    with gps_placeholder:
+        if st.button("🛰️ Gunakan GPS Saya", use_container_width=True):
+            with st.spinner("⏳ Mendapatkan lokasi..."):
+                try:
+                    loc = streamlit_js_eval(
+                        js_expressions="new Promise((resolve, reject) => { navigator.geolocation.getCurrentPosition(pos => resolve({latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy}), err => resolve(null), {enableHighAccuracy: true, timeout: 10000}) })", 
+                        key="get_location_gps"
+                    )
+                    if loc and loc.get('latitude'):
+                        st.session_state['lokasi_rumah'] = [loc['latitude'], loc['longitude']]
+                        st.toast(f"✅ Lokasi berhasil diperoleh! (Akurasi: ±{loc.get('accuracy', '?')}m)", icon="📍")
+                        st.rerun()
+                    else:
+                        st.toast("⚠️ Gagal获取位置信息. Pastikan GPS diaktifkan dan izin diberikan.", icon="⚠️")
+                except Exception as e:
+                    st.toast(f"❌ Error: {str(e)}", icon="❌")
+    
+    # Manual coordinate input as fallback
+    with st.sidebar.expander("📝 Input Manual Koordinat"):
+        col_lat, col_lon = st.columns(2)
+        with col_lat:
+            manual_lat = st.number_input("Latitude", value=st.session_state.get('lokasi_rumah', [-6.9175])[0] if st.session_state.get('lokasi_rumah') else -6.9175, format="%.6f")
+        with col_lon:
+            manual_lon = st.number_input("Longitude", value=st.session_state.get('lokasi_rumah', [107.6191])[1] if st.session_state.get('lokasi_rumah') else 107.6191, format="%.6f")
+        if st.button("Tetapkan Koordinat", use_container_width=True):
+            st.session_state['lokasi_rumah'] = [manual_lat, manual_lon]
+            st.toast("✅ Koordinat manual ditetapkan!", icon="📍")
             st.rerun()
-
-    if st.sidebar.button("🗑️ Reset Lokasi Rumah", use_container_width=True):
-        st.session_state['lokasi_rumah'] = None
+    
+    st.sidebar.divider()
+    
+    # Zonasi Settings (moved outside form for better UX)
+    aktifkan_zonasi = st.sidebar.checkbox("🏠 Aktifkan Mode Zonasi", value=False)
+    radius_km = st.sidebar.slider("📏 Radius Zonasi (KM):", 1, 15, 3, disabled=not aktifkan_zonasi)
+    
+    if aktifkan_zonasi and not st.session_state.get('lokasi_rumah'):
+        st.sidebar.warning("⚠️ Silakan pilih lokasi terlebih dahulu!")
+    
+    st.sidebar.divider()
+    
+    # ==================== SECTION 2: FILTER DATA ====================
+    st.sidebar.subheader("🔍 Filter Data")
+    
+    filter_jenjang = st.sidebar.multiselect("Jenjang Pendidikan:", df['JENJANG'].unique(), default=df['JENJANG'].unique())
+    filter_akreditasi = st.sidebar.multiselect("Akreditasi:", sorted(df['AKREDITASI_CLEAN'].unique()), default=df['AKREDITASI_CLEAN'].unique())
+    filter_kota = st.sidebar.multiselect("Kab/Kota:", sorted(df['KABUPATEN'].unique().astype(str)), default=[])
+    
+    st.sidebar.divider()
+    
+    # ==================== SECTION 3: ACTIONS ====================
+    col_reset1, col_reset2 = st.sidebar.columns(2)
+    with col_reset1:
+        if st.button("🔄 Reset Filter", use_container_width=True):
+            st.rerun()
+    with col_reset2:
+        if st.button("🗑️ Reset Semua", use_container_width=True):
+            st.session_state['lokasi_rumah'] = None
+            st.rerun()
+    
+    # Apply button
+    if st.sidebar.button("✅ Terapkan & Tampilkan", use_container_width=True):
         st.rerun()
-
-    # 2. FILTER FORM (SEMUA INPUT MASUK SINI)
-    with st.sidebar.form("filter_form"):
-        st.subheader("🏠 Mode Zonasi")
-        aktifkan_zonasi = st.checkbox("Aktifkan Pilih Lokasi Rumah", value=False)
-        radius_km = st.slider("Radius Zonasi (KM):", 1, 15, 3)
-        
-        st.divider()
-        st.subheader("Filter Data")
-        filter_jenjang = st.multiselect("Jenjang:", df['JENJANG'].unique(), default=df['JENJANG'].unique())
-        filter_akreditasi = st.multiselect("Akreditasi:", sorted(df['AKREDITASI_CLEAN'].unique()), default=df['AKREDITASI_CLEAN'].unique())
-        filter_kota = st.multiselect("Kab/Kota:", sorted(df['KABUPATEN'].unique().astype(str)), default=[])
-
-        submitted = st.form_submit_button("Terapkan Filter", use_container_width=True)
     
     # --- INFO TAMBAHAN ---
     st.sidebar.markdown("---")
-    st.sidebar.caption("Developed by Davin")
+    st.sidebar.caption("📊 **Tips:** Klik pada peta untuk menentukan lokasi rumah")
+    st.sidebar.caption("👨‍💻 Developed by Davin")
 
     # --- LOGIKA FILTERING ---
     df_filtered = df[df['JENJANG'].isin(filter_jenjang)]
