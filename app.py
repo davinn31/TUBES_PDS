@@ -100,6 +100,10 @@ def main():
 
     if 'lokasi_rumah' not in st.session_state:
         st.session_state['lokasi_rumah'] = None
+    
+    # Session state for school search
+    if 'selected_school' not in st.session_state:
+        st.session_state['selected_school'] = None
 
     # ==================== SIDEBAR (REORGANIZED) ====================
     st.sidebar.header("🎛️ Panel Kontrol")
@@ -231,12 +235,38 @@ def main():
     with col_map:
         st.subheader("Interactive Map")
         
-        if aktifkan_zonasi and st.session_state['lokasi_rumah']:
-             center_lat, center_lon = st.session_state['lokasi_rumah']
-             zoom = 13 
-        elif not df_filtered.empty:
-            center_lat, center_lon = df_filtered['LINTANG'].mean(), df_filtered['BUJUR'].mean()
-            zoom = 10 if filter_kota else 9
+        # School search selectbox
+        if not df_filtered.empty:
+            school_options = ["-- Pilih Sekolah --"] + sorted(df_filtered['NAMA SEKOLAH'].unique().tolist())
+            selected_school = st.selectbox(
+                "🔍 Cari Sekolah:",
+                options=school_options,
+                index=0,
+                key="school_search",
+                help="Pilih nama sekolah untuk melihat lokasinya di peta"
+            )
+            
+            # Update session state and determine map center
+            if selected_school != "-- Pilih Sekolah --":
+                # Find the selected school in the dataframe
+                school_data = df_filtered[df_filtered['NAMA SEKOLAH'] == selected_school]
+                if not school_data.empty:
+                    center_lat = school_data.iloc[0]['LINTANG']
+                    center_lon = school_data.iloc[0]['BUJUR']
+                    zoom = 16  # Closer zoom for specific school
+                    st.session_state['selected_school'] = selected_school
+            else:
+                st.session_state['selected_school'] = None
+                # Default map center logic
+                if aktifkan_zonasi and st.session_state['lokasi_rumah']:
+                    center_lat, center_lon = st.session_state['lokasi_rumah']
+                    zoom = 13 
+                elif not df_filtered.empty:
+                    center_lat, center_lon = df_filtered['LINTANG'].mean(), df_filtered['BUJUR'].mean()
+                    zoom = 10 if filter_kota else 9
+                else:
+                    center_lat, center_lon = -6.9175, 107.6191
+                    zoom = 9
         else:
             center_lat, center_lon = -6.9175, 107.6191
             zoom = 9
