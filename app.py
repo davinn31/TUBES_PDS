@@ -168,21 +168,6 @@ def main():
         
         st.caption("Examples: 'Bandung', 'Cimahi', 'Cianjur', 'Jalan Braga Bandung'")
     
-    # Manual Coordinate Input (fallback)
-    with st.sidebar.expander("Manual Coordinate Input"):
-        col_lat, col_lon = st.columns(2)
-        with col_lat:
-            manual_lat = st.number_input("Latitude", value=st.session_state.get('lokasi_rumah', [-6.9175])[0] if st.session_state.get('lokasi_rumah') else -6.9175, format="%.6f", min_value=-8.5, max_value=-5.0)
-        with col_lon:
-            manual_lon = st.number_input("Longitude", value=st.session_state.get('lokasi_rumah', [107.6191])[1] if st.session_state.get('lokasi_rumah') else 107.6191, format="%.6f", min_value=106.0, max_value=109.0)
-        if st.button("Set Coordinates", key="set_coords_btn", use_container_width=True):
-            if -8.5 <= manual_lat <= -5.0 and 106.0 <= manual_lon <= 109.0:
-                st.session_state['lokasi_rumah'] = [manual_lat, manual_lon]
-                st.toast(f"Manual coordinates set! {manual_lat:.5f}, {manual_lon:.5f}")
-                st.rerun()
-            else:
-                st.error("Coordinates outside West Java region!")
-    
     st.sidebar.divider()
     
     # Zoning Settings
