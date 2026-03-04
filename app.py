@@ -2,10 +2,9 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-from folium.plugins import MarkerCluster, HeatMap, Fullscreen
+from folium.plugins import MarkerCluster, Fullscreen
 import altair as alt
 from math import radians, cos, sin, asin, sqrt
-import time
 from streamlit_js_eval import streamlit_js_eval
 import data_loader
 
