@@ -152,17 +152,51 @@ def main():
                 except Exception as e:
                     st.toast(f"Error: {str(e)}")
     
+    # Initialize manual input session state if not exists
+    if 'manual_lat' not in st.session_state:
+        st.session_state['manual_lat'] = -6.9175
+    if 'manual_lon' not in st.session_state:
+        st.session_state['manual_lon'] = 107.6191
+    
     # Manual coordinate input as fallback
     with st.sidebar.expander("Manual Coordinate Input"):
+        st.caption("Enter coordinates within West Java region:")
+        st.caption("Lat: -5.0 to -8.5 | Lon: 106.0 to 109.0")
+        
         col_lat, col_lon = st.columns(2)
         with col_lat:
-            manual_lat = st.number_input("Latitude", value=st.session_state.get('lokasi_rumah', [-6.9175])[0] if st.session_state.get('lokasi_rumah') else -6.9175, format="%.6f")
+            manual_lat = st.number_input(
+                "Latitude", 
+                min_value=-8.5, 
+                max_value=-5.0, 
+                value=st.session_state.get('lokasi_rumah', [-6.9175])[0] if st.session_state.get('lokasi_rumah') else st.session_state['manual_lat'],
+                step=0.0001,
+                format="%.6f",
+                key="manual_lat_input",
+                help="West Java latitude range: -5.0 to -8.5"
+            )
         with col_lon:
-            manual_lon = st.number_input("Longitude", value=st.session_state.get('lokasi_rumah', [107.6191])[1] if st.session_state.get('lokasi_rumah') else 107.6191, format="%.6f")
-        if st.button("Set Coordinates", use_container_width=True):
-            st.session_state['lokasi_rumah'] = [manual_lat, manual_lon]
-            st.toast("Manual coordinates set!")
-            st.rerun()
+            manual_lon = st.number_input(
+                "Longitude", 
+                min_value=106.0, 
+                max_value=109.0, 
+                value=st.session_state.get('lokasi_rumah', [107.6191])[1] if st.session_state.get('lokasi_rumah') else st.session_state['manual_lon'],
+                step=0.0001,
+                format="%.6f",
+                key="manual_lon_input",
+                help="West Java longitude range: 106.0 to 109.0"
+            )
+        
+        if st.button("Set Coordinates", use_container_width=True, key="set_coords_btn"):
+            # Validate coordinates are within West Java bounds
+            if -8.5 <= manual_lat <= -5.0 and 106.0 <= manual_lon <= 109.0:
+                st.session_state['lokasi_rumah'] = [manual_lat, manual_lon]
+                st.session_state['manual_lat'] = manual_lat
+                st.session_state['manual_lon'] = manual_lon
+                st.toast(f"Coordinates set: {manual_lat:.6f}, {manual_lon:.6f}")
+                st.rerun()
+            else:
+                st.sidebar.error("Coordinates outside West Java region!")
     
     st.sidebar.divider()
     
