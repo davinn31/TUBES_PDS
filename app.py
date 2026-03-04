@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import folium
@@ -8,6 +7,7 @@ import altair as alt
 from math import radians, cos, sin, asin, sqrt
 import time
 from streamlit_js_eval import streamlit_js_eval
+import data_loader
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -68,7 +68,15 @@ def haversine(lon1, lat1, lon2, lat2):
 # --- LOAD DATA FUNCTION ---
 @st.cache_data
 def load_data():
+    """
+    Load school data from CSV file.
+    To update/refresh data from Google Sheets, run: data_loader.process_data()
+    """
     try:
+        # Optionally, you can run data_loader.process_data() here to fetch fresh data
+        # Uncomment the line below to auto-refresh data on each run:
+        # data_loader.process_data()
+        
         df = pd.read_csv("data_sekolah_jabar_final.csv")
         if 'NAMA DUSUN' in df.columns:
             df = df.drop(columns=['NAMA DUSUN'])
@@ -76,7 +84,14 @@ def load_data():
             df = df.rename(columns={'QUALITY_SCORE': 'SKOR_KUALITAS'})
         return df
     except FileNotFoundError:
-        return None
+        # If CSV doesn't exist, try to generate it from data_loader
+        try:
+            data_loader.process_data()
+            df = pd.read_csv("data_sekolah_jabar_final.csv")
+            return df
+        except Exception as e:
+            st.error(f"Failed to load data: {e}")
+            return None
 
 # --- VISUAL UTILS ---
 def get_color(akreditasi):
