@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import folium
@@ -8,10 +9,10 @@ from math import radians, cos, sin, asin, sqrt
 import time
 from streamlit_js_eval import streamlit_js_eval
 
-# --- KONFIGURASI HALAMAN ---
+# --- PAGE CONFIG ---
 st.set_page_config(
-    page_title="Analisis Zonasi PPDB Jabar",
-    page_icon="🎓",
+    page_title="West Java PPDB Zoning Analysis",
+    page_icon="",
     layout="wide"
 )
 
@@ -32,9 +33,9 @@ st.markdown("""
         color: #495057 !important; 
     }
     
-    /* PERBAIKAN DI SINI: Font Value Diperkecil jadi 20px */
+    /* Font Value size adjusted */
     [data-testid="stMetricValue"] {
-        font-size: 20px; /* <-- Ukuran pas agar "Negeri | Swasta" tidak kepotong */
+        font-size: 20px;
         font-weight: bold;
         color: #000000 !important;
     }
@@ -54,7 +55,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# --- FUNGSI JARAK (HAVERSINE) ---
+# --- DISTANCE FUNCTION (HAVERSINE) ---
 def haversine(lon1, lat1, lon2, lat2):
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
     dlon = lon2 - lon1 
@@ -64,7 +65,7 @@ def haversine(lon1, lat1, lon2, lat2):
     r = 6371 
     return c * r
 
-# --- FUNGSI LOAD DATA ---
+# --- LOAD DATA FUNCTION ---
 @st.cache_data
 def load_data():
     try:
@@ -77,25 +78,25 @@ def load_data():
     except FileNotFoundError:
         return None
 
-# --- UTILS VISUAL ---
+# --- VISUAL UTILS ---
 def get_color(akreditasi):
     if akreditasi == 'A': return 'green'
     elif akreditasi == 'B': return 'blue'
     elif akreditasi == 'C': return 'orange'
-    else: return 'red' 
+    else: return 'red'
 
 # --- MAIN APPLICATION ---
 def main():
-    st.title("West java Education Insight - Interactive GIS Dashboard")
-    st.markdown("**Simulasi Jarak & Kualitas Sekolah** | Data Source: Dapodik/Verval SP")
+    st.title("West Java Education Insight - Interactive GIS Dashboard")
+    st.markdown("**School Distance & Quality Simulation** | Data Source: Dapodik/Verval SP")
     
-    with st.status("🚀 Sedang memuat sistem zonasi...", expanded=False) as status:
+    with st.status("Loading zoning system...", expanded=False) as status:
         df = load_data() 
         if df is not None:
-            status.update(label="Sistem Siap!", state="complete")
+            status.update(label="System Ready!", state="complete")
     
     if df is None:
-        st.error("⚠️ File data tidak ditemukan.")
+        st.error("Data file not found.")
         st.stop()
 
     if 'lokasi_rumah' not in st.session_state:
@@ -105,24 +106,24 @@ def main():
     if 'selected_school' not in st.session_state:
         st.session_state['selected_school'] = None
 
-    # ==================== SIDEBAR (REORGANIZED) ====================
-    st.sidebar.header("🎛️ Panel Kontrol")
+    # ==================== SIDEBAR ====================
+    st.sidebar.header("Control Panel")
     
-    # ==================== SECTION 1: LOKASI & ZONASI ====================
-    st.sidebar.subheader("📍 Lokasi & Zonasi")
+    # ==================== SECTION 1: LOCATION & ZONING ====================
+    st.sidebar.subheader("Location & Zoning")
     
     # Display current location status
     if st.session_state.get('lokasi_rumah'):
         lat_curr, lon_curr = st.session_state['lokasi_rumah']
-        st.sidebar.success(f"✅ Lokasi aktif: {lat_curr:.5f}, {lon_curr:.5f}")
+        st.sidebar.success(f"Active Location: {lat_curr:.5f}, {lon_curr:.5f}")
     else:
-        st.sidebar.info("ℹ️ Belum ada lokasi yang dipilih")
+        st.sidebar.info("No location selected yet")
     
     # GPS Button with loading
     gps_placeholder = st.sidebar.empty()
     with gps_placeholder:
-        if st.button("🛰️ Gunakan GPS Saya", use_container_width=True):
-            with st.spinner("⏳ Mendapatkan lokasi..."):
+        if st.button("Use My GPS", use_container_width=True):
+            with st.spinner("Getting location..."):
                 try:
                     loc = streamlit_js_eval(
                         js_expressions="new Promise((resolve, reject) => { navigator.geolocation.getCurrentPosition(pos => resolve({latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy}), err => resolve(null), {enableHighAccuracy: true, timeout: 10000}) })", 
@@ -130,71 +131,71 @@ def main():
                     )
                     if loc and loc.get('latitude'):
                         st.session_state['lokasi_rumah'] = [loc['latitude'], loc['longitude']]
-                        st.toast(f"✅ Lokasi berhasil diperoleh! (Akurasi: ±{loc.get('accuracy', '?')}m)", icon="📍")
+                        st.toast(f"Location obtained! (Accuracy: +/-{loc.get('accuracy', '?')}m)")
                         st.rerun()
                     else:
-                        st.toast("⚠️ Gagal获取位置信息. Pastikan GPS diaktifkan dan izin diberikan.", icon="⚠️")
+                        st.toast("Failed. Make sure GPS is enabled and permission is granted.")
                 except Exception as e:
-                    st.toast(f"❌ Error: {str(e)}", icon="❌")
+                    st.toast(f"Error: {str(e)}")
     
     # Manual coordinate input as fallback
-    with st.sidebar.expander("📝 Input Manual Koordinat"):
+    with st.sidebar.expander("Manual Coordinate Input"):
         col_lat, col_lon = st.columns(2)
         with col_lat:
             manual_lat = st.number_input("Latitude", value=st.session_state.get('lokasi_rumah', [-6.9175])[0] if st.session_state.get('lokasi_rumah') else -6.9175, format="%.6f")
         with col_lon:
             manual_lon = st.number_input("Longitude", value=st.session_state.get('lokasi_rumah', [107.6191])[1] if st.session_state.get('lokasi_rumah') else 107.6191, format="%.6f")
-        if st.button("Tetapkan Koordinat", use_container_width=True):
+        if st.button("Set Coordinates", use_container_width=True):
             st.session_state['lokasi_rumah'] = [manual_lat, manual_lon]
-            st.toast("✅ Koordinat manual ditetapkan!", icon="📍")
+            st.toast("Manual coordinates set!")
             st.rerun()
     
     st.sidebar.divider()
     
-    # Zonasi Settings (moved outside form for better UX)
-    aktifkan_zonasi = st.sidebar.checkbox("🏠 Aktifkan Mode Zonasi", value=False)
-    radius_km = st.sidebar.slider("📏 Radius Zonasi (KM):", 1, 15, 3, disabled=not aktifkan_zonasi)
+    # Zoning Settings
+    aktifkan_zonasi = st.sidebar.checkbox("Enable Zoning Mode", value=False)
+    radius_km = st.sidebar.slider("Zoning Radius (KM):", 1, 15, 3, disabled=not aktifkan_zonasi)
     
     if aktifkan_zonasi and not st.session_state.get('lokasi_rumah'):
-        st.sidebar.warning("⚠️ Silakan pilih lokasi terlebih dahulu!")
+        st.sidebar.warning("Please select a location first!")
     
     st.sidebar.divider()
     
     # ==================== SECTION 2: FILTER DATA ====================
-    st.sidebar.subheader("🔍 Filter Data")
+    st.sidebar.subheader("Filter Data")
     
-    filter_jenjang = st.sidebar.multiselect("Jenjang Pendidikan:", df['JENJANG'].unique(), default=df['JENJANG'].unique())
-    filter_akreditasi = st.sidebar.multiselect("Akreditasi:", sorted(df['AKREDITASI_CLEAN'].unique()), default=df['AKREDITASI_CLEAN'].unique())
-    filter_kota = st.sidebar.multiselect("Kab/Kota:", sorted(df['KABUPATEN'].unique().astype(str)), default=[])
+    filter_jenjang = st.sidebar.multiselect("Education Level:", df['JENJANG'].unique(), default=df['JENJANG'].unique())
+    filter_akreditasi = st.sidebar.multiselect("Accreditation:", sorted(df['AKREDITASI_CLEAN'].unique()), default=df['AKREDITASI_CLEAN'].unique())
+    filter_kota = st.sidebar.multiselect("City/Regency:", sorted(df['KABUPATEN'].unique().astype(str)), default=[])
     
     st.sidebar.divider()
     
     # ==================== SECTION 3: ACTIONS ====================
     col_reset1, col_reset2 = st.sidebar.columns(2)
     with col_reset1:
-        if st.button("🔄 Reset Filter", use_container_width=True):
+        if st.button("Reset Filter", use_container_width=True):
             st.rerun()
     with col_reset2:
-        if st.button("🗑️ Reset Semua", use_container_width=True):
+        if st.button("Reset All", use_container_width=True):
             st.session_state['lokasi_rumah'] = None
             st.rerun()
     
     # Apply button
-    if st.sidebar.button("✅ Terapkan & Tampilkan", use_container_width=True):
+    if st.sidebar.button("Apply & Display", use_container_width=True):
         st.rerun()
     
-    # --- INFO TAMBAHAN ---
+    # --- INFO ---
     st.sidebar.markdown("---")
-    st.sidebar.caption("📊 **Tips:** Klik pada peta untuk menentukan lokasi rumah")
-    st.sidebar.caption("👨‍💻 Developed by Davin")
+    st.sidebar.caption("Tips: Click on the map to set home location")
+    st.sidebar.caption("Developed by Davin")
 
-    # --- LOGIKA FILTERING ---
+    # --- FILTERING LOGIC ---
     df_filtered = df[df['JENJANG'].isin(filter_jenjang)]
     df_filtered = df_filtered[df_filtered['AKREDITASI_CLEAN'].isin(filter_akreditasi)]
     if filter_kota:
         df_filtered = df_filtered[df_filtered['KABUPATEN'].isin(filter_kota)]
 
-    # --- LOGIKA JARAK ---
+    # --- DISTANCE LOGIC ---
     jarak_msg = ""
     if aktifkan_zonasi and st.session_state['lokasi_rumah']:
         user_lat, user_lon = st.session_state['lokasi_rumah']
@@ -203,15 +204,15 @@ def main():
         )
         df_filtered = df_filtered[df_filtered['JARAK_KM'] <= radius_km].copy()
         df_filtered = df_filtered.sort_values('JARAK_KM')
-        jarak_msg = f"📍 Radius **{radius_km} KM** dari rumah."
+        jarak_msg = f"Radius {radius_km} KM from home."
 
-     # --- KPI METRICS ---
-    st.markdown("### 📊 Ringkasan Statistik")
+    # --- KPI METRICS ---
+    st.markdown("### Statistical Summary")
     if jarak_msg:
-        st.toast(jarak_msg, icon='📍') 
+        st.toast(jarak_msg) 
         st.success(jarak_msg) 
         
-    # PERBAIKAN DI SINI: Kolom ke-4 dibuat lebih lebar (1.5x) agar muat
+    # Metric columns adjusted for better layout
     col1, col2, col3, col4 = st.columns([1, 1, 1, 1.5])
     
     total = len(df_filtered)
@@ -219,35 +220,35 @@ def main():
     persen_a = (jml_a / total * 100) if total > 0 else 0
     avg_q = df_filtered['SKOR_KUALITAS'].mean() if total > 0 else 0 
     
-    col1.metric("Total Sekolah", f"{total:,}")
-    col2.metric("Akreditasi A", f"{jml_a} ({persen_a:.1f}%)")
-    col3.metric("Rata-rata Skor", f"{avg_q:.1f}")
+    col1.metric("Total Schools", f"{total:,}")
+    col2.metric("Accreditation A", f"{jml_a} ({persen_a:.1f}%)")
+    col3.metric("Average Score", f"{avg_q:.1f}")
     
     if 'STATUS' in df_filtered.columns:
         negeri = len(df_filtered[df_filtered['STATUS'] == 'NEGERI'])
         swasta = total - negeri
-        col4.metric("Status", f"{negeri} Negeri | {swasta} Swasta")
+        col4.metric("Status", f"{negeri} Public | {swasta} Private")
 
     st.divider()
     col_map, col_chart = st.columns([2, 1])
 
-        # --- PETA & CHART ---
+    # --- MAP & CHART ---
     with col_map:
         st.subheader("Interactive Map")
         
         # School search selectbox
         if not df_filtered.empty:
-            school_options = ["-- Pilih Sekolah --"] + sorted(df_filtered['NAMA SEKOLAH'].unique().tolist())
+            school_options = ["-- Select School --"] + sorted(df_filtered['NAMA SEKOLAH'].unique().tolist())
             selected_school = st.selectbox(
-                "🔍 Cari Sekolah:",
+                "Search School:",
                 options=school_options,
                 index=0,
                 key="school_search",
-                help="Pilih nama sekolah untuk melihat lokasinya di peta"
+                help="Select a school name to view its location on the map"
             )
             
             # Update session state and determine map center
-            if selected_school != "-- Pilih Sekolah --":
+            if selected_school != "-- Select School --":
                 # Find the selected school in the dataframe
                 school_data = df_filtered[df_filtered['NAMA SEKOLAH'] == selected_school]
                 if not school_data.empty:
@@ -277,7 +278,7 @@ def main():
         if aktifkan_zonasi and st.session_state['lokasi_rumah']:
             folium.Marker(
                 location=st.session_state['lokasi_rumah'],
-                tooltip="Lokasi Rumah Anda",
+                tooltip="Your Home Location",
                 icon=folium.Icon(color="black", icon="home", prefix="fa")
             ).add_to(m)
             
@@ -289,15 +290,15 @@ def main():
 
         marker_cluster = MarkerCluster().add_to(m)
         for _, row in df_filtered.iterrows():
-            info_jarak = f"<br><b>Jarak:</b> {row['JARAK_KM']:.2f} KM" if 'JARAK_KM' in row else ""
+            info_jarak = f"<br><b>Distance:</b> {row['JARAK_KM']:.2f} KM" if 'JARAK_KM' in row else ""
             
             html = f"""
             <div style="font-family:sans-serif; width:200px">
                 <h4 style="margin-bottom:0;">{row['NAMA SEKOLAH']}</h4>
                 <span style="font-size:12px; color:gray;">{row['JENJANG']} | {row.get('STATUS','-')}</span>
                 <hr style="margin:5px 0;">
-                <b>Akreditasi:</b> {row['AKREDITASI_CLEAN']}<br>
-                <b>Skor:</b> {row['SKOR_KUALITAS']}{info_jarak}
+                <b>Accreditation:</b> {row['AKREDITASI_CLEAN']}<br>
+                <b>Score:</b> {row['SKOR_KUALITAS']}{info_jarak}
             </div>
             """
             folium.Marker(
@@ -320,36 +321,36 @@ def main():
                     st.rerun() 
 
     with col_chart:
-        st.subheader("📈 Analisis Data")
+        st.subheader("Data Analysis")
         if not df_filtered.empty:
             chart_akreditasi = alt.Chart(df_filtered).mark_arc(innerRadius=50).encode(
                 theta=alt.Theta("count()", stack=True),
-                color=alt.Color('AKREDITASI_CLEAN', legend=alt.Legend(title="Akreditasi"),
+                color=alt.Color('AKREDITASI_CLEAN', legend=alt.Legend(title="Accreditation"),
                                 scale=alt.Scale(domain=['A', 'B', 'C', 'TT'], range=['green', 'blue', 'orange', 'red'])),
                 tooltip=[
-                    alt.Tooltip('AKREDITASI_CLEAN', title='Akreditasi'),
-                    alt.Tooltip('count()', title='Jumlah Sekolah') 
+                    alt.Tooltip('AKREDITASI_CLEAN', title='Accreditation'),
+                    alt.Tooltip('count()', title='Number of Schools') 
                 ],
                 order=alt.Order("AKREDITASI_CLEAN", sort="ascending")
-            ).properties(title="Proporsi Sekolah (Area Terpilih)")
+            ).properties(title="School Proportion (Selected Area)")
             
             st.altair_chart(chart_akreditasi, use_container_width=True)
 
             if 'KECAMATAN' in df_filtered.columns:
                 top_kec = df_filtered['KECAMATAN'].value_counts().head(10).reset_index()
-                top_kec.columns = ['Kecamatan', 'Jumlah']
+                top_kec.columns = ['Subdistrict', 'Count']
                 
                 chart_kec = alt.Chart(top_kec).mark_bar().encode(
-                    x=alt.X('Jumlah', title='Jumlah Sekolah'), 
-                    y=alt.Y('Kecamatan', sort='-x', title=''),
-                    tooltip=['Kecamatan', alt.Tooltip('Jumlah', title='Jumlah Sekolah')]
-                ).properties(title="Top 10 Kecamatan")
+                    x=alt.X('Count', title='Number of Schools'), 
+                    y=alt.Y('Subdistrict', sort='-x', title=''),
+                    tooltip=['Subdistrict', alt.Tooltip('Count', title='Number of Schools')]
+                ).properties(title="Top 10 Subdistricts")
                 st.altair_chart(chart_kec, use_container_width=True)
         else:
-            st.info("Belum ada sekolah dalam radius ini. Coba geser peta atau perbesar radius.")
+            st.info("No schools in this radius. Try moving the map or increasing the radius.")
 
-     # --- TABEL DATA ---
-    with st.expander("📂 Lihat Data Detail"):
+    # --- DATA TABLE ---
+    with st.expander("View Data Details"):
         kolom_buang = ['Unnamed: 0', 'BENTUK PENDIDIKAN', 'WAKTU PENYELENGGARAAN', 
                        'AKREDITASI_CLEAN', 'BENTUK', 'NAMA DUSUN']
         
@@ -372,3 +373,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

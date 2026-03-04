@@ -2,7 +2,5 @@ streamlit
 pandas
 folium
 streamlit-folium
-geopy
-streamlit-geolocation
 altair
 streamlit-js-eval
